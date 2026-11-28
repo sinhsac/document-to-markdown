@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document to Markdown — Official CLI &amp; Python API Guide</title>
+  <meta name="description" content="Complete guide for Document to Markdown: local zero-config converter from PDF, scanned images, and Excel workbooks into clean AI/RAG-ready Markdown with PaddleOCR and PP-Structure." />
+  <link rel="stylesheet" href="https://sinhsac.github.io/assets/shared.css" />
+  <script>
+    (function(){try{var t=localStorage.getItem("sinhsac-theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme:dark)").matches))document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();
+  </script>
+</head>
+<body data-page="guide" data-current-repo="document-to-markdown">
+  <header id="site-header"></header>
+
+  <div class="docs-layout">
+    <aside id="docs-sidebar"></aside>
+
+    <main class="docs-main">
+      <div class="doc-hero">
+        <div class="doc-breadcrumbs">
+          <a href="https://sinhsac.github.io/">sinhsac.github.io</a>
+          <span>/</span>
+          <span>document-to-markdown</span>
+        </div>
+        <h1>Document to Markdown</h1>
+        <p class="doc-lead">
+          Local, zero-config Python CLI &amp; library converting <strong>PDFs</strong>, <strong>scanned images</strong>, and <strong>Excel workbooks</strong> into clean, AI/RAG-ready Markdown using PyMuPDF, <strong>PaddleOCR / PP-StructureV3</strong>, and Tesseract fallback.
+        </p>
+        <div class="doc-badges">
+          <span class="pill">Python 3.10+</span>
+          <span class="pill">PaddleOCR · PP-StructureV3</span>
+          <span class="pill">PDF · Images · Excel</span>
+          <span class="pill">100% Local &amp; Private</span>
+          <span class="pill">MIT License</span>
+        </div>
+        <div class="doc-hero-actions">
+          <a class="btn btn-primary" href="#installation">Install with pip ↓</a>
+          <a class="btn" href="https://github.com/sinhsac/document-to-markdown/releases" target="_blank" rel="noopener">Prebuilt Releases ↗</a>
+          <a class="btn" href="https://github.com/sinhsac/document-to-markdown" target="_blank" rel="noopener">GitHub Repository ↗</a>
+        </div>
+      </div>
+
+      <article class="doc-article" id="doc-content">
+        <h2>Supported Formats &amp; Capabilities</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Input</th>
+              <th>Extensions</th>
+              <th>What It Handles</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>PDF</strong></td>
+              <td><code>.pdf</code></td>
+              <td>Native text extraction (PyMuPDF) + automatic OCR on scanned or image-heavy pages (&ge;35% image area), multi-column reading order, repeated header/footer removal, password prompt (<code>--password</code>), optional image export (<code>--assets</code>).</td>
+            </tr>
+            <tr>
+              <td><strong>Images</strong></td>
+              <td><code>.png</code>, <code>.jpg</code>, <code>.jpeg</code>, <code>.webp</code>, <code>.bmp</code>, <code>.tif</code>, <code>.tiff</code></td>
+              <td>Automatic EXIF orientation fix, multi-page TIFF support, layout/table reconstruction via PP-Structure or line-grouped plain OCR, automatic Tesseract fallback.</td>
+            </tr>
+            <tr>
+              <td><strong>Excel</strong></td>
+              <td><code>.xlsx</code>, <code>.xlsm</code></td>
+              <td>Multi-region sheet splitting into separate Markdown tables, merged-cell expansion, 3-tier formula resolution (cached value → headless LibreOffice → pure-Python <code>formulas</code>), numeric alignment.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout callout-tip">
+          <div class="callout-title">Clean Output by Default</div>
+          <p>Only the single <code>.md</code> file is written by default — no clutter folders. Pass <code>--assets</code> to export extracted images into <code>&lt;stem&gt;_assets/</code> and <code>--meta</code> to emit a <code>&lt;stem&gt;.meta.json</code> sidecar.</p>
+        </div>
+
+        <h2 id="installation">Installation</h2>
+        <p>Requires <strong>Python 3.10+</strong>. Install directly from GitHub in one command:</p>
+        <pre><code># Base install (native PDF + Excel)
+pip install git+https://github.com/sinhsac/document-to-markdown.git
+
+# Recommended: add PaddleOCR + PP-Structure layout/table analysis
+pip install "document-to-markdown[ocr] @ git+https://github.com/sinhsac/document-to-markdown.git"
+
+# Optional extras: Tesseract fallback or pure-Python Excel formula engine
+pip install "document-to-markdown[tesseract] @ git+https://github.com/sinhsac/document-to-markdown.git"
+pip install "document-to-markdown[excel-calc] @ git+https://github.com/sinhsac/document-to-markdown.git"
+
+# Install all extras
+pip install "document-to-markdown[all] @ git+https://github.com/sinhsac/document-to-markdown.git"</code></pre>
+
+        <h3>From Local Source (Editable Install)</h3>
+        <pre><code>git clone https://github.com/sinhsac/document-to-markdown.git
+cd document-to-markdown
+pip install -e ".[ocr]"</code></pre>
+
+        <p>
+          Standalone executables (Linux, Windows <code>.exe</code>, macOS — bundling native PDF, Excel, and Tesseract OCR) are also published on the <a href="https://github.com/sinhsac/document-to-markdown/releases" target="_blank" rel="noopener">Releases page</a>. On the first OCR run, PaddleOCR downloads its detection/recognition/layout models once locally.
+        </p>
+
+        <h2>CLI Quick Start</h2>
+        <p>Run via <code>document-to-markdown</code> or <code>python -m document_converter.cli</code>:</p>
+        <pre><code># Convert a PDF (outputs report.md only)
+document-to-markdown report.pdf
+
+# Convert a phone photo / scan (auto EXIF rotation + PP-Structure / PaddleOCR)
+document-to-markdown scan.png
+
+# Bilingual English + Vietnamese PDF formatted cleanly for AI/RAG ingestion
+document-to-markdown report.pdf --mode ai --lang eng+vie
+
+# Export extracted PDF images (_assets/) and metadata sidecar (.meta.json)
+document-to-markdown report.pdf --assets --meta
+
+# Batch convert an entire folder recursively
+document-to-markdown data/input -o data/output --mode ai
+
+# Convert an Excel workbook
+document-to-markdown report.xlsx -o report.md
+
+# Faster CPU OCR using lightweight mobile PP-OCRv5 models
+document-to-markdown scan.pdf --ocr-profile mobile --ocr-version PP-OCRv5
+
+# Disable PP-Structure layout analysis (faster plain OCR only)
+document-to-markdown complex.pdf --no-structure</code></pre>
+
+        <h2>CLI Options Reference</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Option</th>
+              <th>Default / Values</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>inputs</code></td><td>path(s)</td><td>One or more files or directories to convert recursively.</td></tr>
+            <tr><td><code>-o</code>, <code>--output</code></td><td><code>&lt;input&gt;.md</code></td><td>Output Markdown file path or destination directory.</td></tr>
+            <tr><td><code>--mode</code></td><td><code>balanced</code> | <code>fidelity</code> | <code>ai</code></td><td>Output style (<code>ai</code> includes source comments and suppresses inline warning blockquotes).</td></tr>
+            <tr><td><code>--ocr</code></td><td><code>auto</code> | <code>paddle</code> | <code>tesseract</code> | <code>off</code></td><td>OCR engine (<code>auto</code> prefers PaddleOCR/PP-Structure and falls back to Tesseract).</td></tr>
+            <tr><td><code>--lang</code></td><td><code>vie</code> (default)</td><td>OCR language (<code>vie</code> covers Vietnamese + English/Latin in PaddleOCR; supports <code>eng+vie</code>, etc.).</td></tr>
+            <tr><td><code>--ocr-profile</code></td><td><code>auto</code> | <code>mobile</code> | <code>server</code></td><td>PaddleOCR model profile (<code>mobile</code> runs significantly faster on CPU).</td></tr>
+            <tr><td><code>--ocr-version</code></td><td>unset</td><td>Model version such as <code>PP-OCRv5</code>, <code>PP-OCRv4</code>, <code>PP-OCRv3</code>.</td></tr>
+            <tr><td><code>--det-model</code> / <code>--rec-model</code></td><td>unset</td><td>Explicit PaddleOCR detection/recognition model names (e.g. <code>PP-OCRv5_mobile_det</code>).</td></tr>
+            <tr><td><code>--no-structure</code></td><td>flag</td><td>Skip PP-Structure layout/table parsing and use plain OCR.</td></tr>
+            <tr><td><code>--assets</code>, <code>--images</code></td><td>flag</td><td>Export PDF images into <code>&lt;stem&gt;_assets/</code>.</td></tr>
+            <tr><td><code>--meta</code></td><td>flag</td><td>Write machine-readable <code>&lt;stem&gt;.meta.json</code> sidecar.</td></tr>
+            <tr><td><code>--preview</code></td><td>flag</td><td>Convert only the first 3 pages of a PDF.</td></tr>
+            <tr><td><code>--password</code></td><td>flag</td><td>Prompt for password on encrypted PDFs.</td></tr>
+            <tr><td><code>--no-recalculate</code></td><td>flag</td><td>Skip LibreOffice / pure-Python Excel formula recalculation.</td></tr>
+          </tbody>
+        </table>
+
+        <h2>Python API</h2>
+        <pre><code>from document_converter import convert_file
+
+output_md = convert_file(
+    "report.pdf",
+    "output/report.md",
+    mode="balanced",       # "balanced" | "fidelity" | "ai"
+    ocr="auto",            # "auto" | "paddle" | "tesseract" | "off"
+    ocr_lang="vie",        # "vie", "eng", "eng+vie", ...
+    ocr_profile="auto",    # "auto" | "mobile" | "server"
+    ocr_version=None,      # e.g. "PP-OCRv5", "PP-OCRv4"
+    det_model=None,        # e.g. "PP-OCRv5_mobile_det"
+    rec_model=None,        # e.g. "latin_PP-OCRv5_mobile_rec"
+    export_images=False,   # True to create output/report_assets/
+    export_meta=False,     # True to create output/report.meta.json
+)</code></pre>
+
+        <h2>How Processing Works &amp; Known Limitations</h2>
+        <ul>
+          <li><strong>Hybrid PDF Routing:</strong> Native text pages are extracted directly via PyMuPDF with multi-column clustering; pages with little text or &ge;35% image coverage automatically route through OCR.</li>
+          <li><strong>3-Tier Excel Formula Evaluation:</strong> Resolves cached <code>.xlsx</code> values first, then LibreOffice headless recalculation (<code>soffice</code> on <code>PATH</code>), then pure-Python <code>formulas</code>, falling back to formula text with a warning if unresolved.</li>
+          <li><strong>Limitations:</strong> Convert legacy <code>.xls</code> to <code>.xlsx</code> first; for pages mixing two unrelated writing systems (e.g. Vietnamese + Japanese on the same page), pass <code>--ocr tesseract</code> with system language packs.</li>
+        </ul>
+      </article>
+
+      <div id="doc-footer-nav"></div>
+    </main>
+
+    <aside id="docs-toc"></aside>
+  </div>
+
+  <footer id="site-footer"></footer>
+
+  <script src="https://sinhsac.github.io/data/projects.js"></script>
+  <script src="https://sinhsac.github.io/assets/guide-shell.js"></script>
+</body>
+</html>
